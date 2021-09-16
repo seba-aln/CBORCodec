@@ -105,7 +105,7 @@ class CBOR
             case self::TYPE_BYTE_STRING:
             case self::TYPE_TEXT_STRING:
                 if (in_array($additional, self::$additionalLength)) {
-                    $length = hexdec(self::getData($data, 1));
+                    $length = hexdec(self::getData($data, self::$additionalLengthBytes[$additional]));
                     $result =  hex2bin(self::getData($data, $length));
                 } else if ($additional == self::ADDITIONAL_TYPE_INDEFINITE) {
                     $result =  hex2bin(self::getIndefiniteData($data));
@@ -117,10 +117,11 @@ class CBOR
             case self::TYPE_ARRAY:
                 $result = [];
                 if (in_array($additional, self::$additionalLength)) {
-                    $length = hexdec(self::getData($data, 1));
+                    $length = hexdec(self::getData($data, self::$additionalLengthBytes[$additional]));
                 } else {
                     $length = $additional;
                 }
+
                 for ($i = 0; $i < $length; $i++) {
                     $result[] = self::parseData($data);
                 }
@@ -129,7 +130,7 @@ class CBOR
             case self::TYPE_HASHMAP:
                 $result = [];
                 if (in_array($additional, self::$additionalLength)) {
-                    $length = hexdec(self::getData($data, 1));
+                    $length = hexdec(self::getData($data, self::$additionalLengthBytes[$additional]));
                 } else {
                     $length = $additional;
                 }
