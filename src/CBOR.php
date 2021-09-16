@@ -56,6 +56,7 @@ class CBOR
 
     public static function decode($value)
     {
+        $value = self::sanitize($value);
         $data = str_split($value, 2);
         return self::parseData($data);
     }
@@ -206,5 +207,14 @@ class CBOR
             $result .= $byte;
         } while (!empty($data));
         return (string)$result;
+    }
+
+    private static function sanitize($value)
+    {
+        $value = strtoupper(str_replace(' ', '', $value));
+        if (preg_match('/[^A-F0-9]/', $value)) {
+            throw new \Exception('Invalid Input');
+        }
+        return $value;
     }
 }
