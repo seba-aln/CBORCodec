@@ -13,4 +13,7 @@ $pi = CBOR::decode('FB40091EB851EB851F') // float(3.14)
 
 ```
 
+### Tests
+All test cases was validated and double checked using official CBOR converter which can be found at http://cbor.me/
+
 Created by PubNub on MIT license
