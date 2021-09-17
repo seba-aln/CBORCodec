@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PubNub\CborCodec;
 
+use Exception;
+
 class CBOR
 {
     const TYPE_MASK         = 0b11100000;
@@ -56,7 +58,7 @@ class CBOR
 
     public static function decode($value)
     {
-        $value = self::sanitize($value);
+        $value = self::sanitizeInput($value);
         $data = str_split($value, 2);
         return self::parseData($data);
     }
@@ -209,7 +211,7 @@ class CBOR
         return (string)$result;
     }
 
-    private static function sanitize($value)
+    private static function sanitizeInput($value)
     {
         $value = strtoupper(str_replace(' ', '', $value));
         if (preg_match('/[^A-F0-9]/', $value)) {
@@ -217,4 +219,94 @@ class CBOR
         }
         return $value;
     }
+
+    /**
+     * Sanitizes the output value so it contains even number of characters and returns it upper cased
+     *
+     * @param string $value Hexadecimal value to sanitize
+     * @param bool $useByteLength Should the length of output be in powers of two (2, 4, 8, 16)
+     *
+     * @return string
+     */
+    private static function sanitizeOutput($value, $useByteLength = false)
+    {
+        $value = strtoupper($value);
+        $length = strlen($value);
+
+        if ($useByteLength) {
+
+            if ($length === 1 || $length === 3) $value = '0'.$value;
+            else if ($length > 4 && $length < 8) $value = str_pad($value, 8, '0', STR_PAD_LEFT);
+            else if ($length > 8 && $length < 16)  $value = str_pad($value, 16, '0', STR_PAD_LEFT);
+        } else if ($length % 2) {
+            $value = '0'.$value;
+        }
+
+        return $value;
+    }
+
+
+    public static function encode($value, $stringType = self::TYPE_TEXT_STRING)
+    {
+        $result = '';
+        switch (gettype($value))
+        {
+            case 'NULL':
+                return self::SIMPLE_VALUE_NULL;
+            case 'boolean':
+                return ($value)
+                    ? self::SIMPLE_VALUE_TRUE
+                    : self::SIMPLE_VALUE_FALSE;
+            case 'integer':
+                $type = self::TYPE_UNSIGNED_INT;
+                if ($value < 0) {
+                    $type = self::TYPE_NEGATIVE_INT;
+                    $value = abs($value + 1);
+                }
+                if ($value <= 23) {
+                    $result = self::sanitizeOutput(dechex($type | $value));
+                } else {
+                    $value = self::sanitizeOutput(dechex($value), true);
+                    $lengthHeader = array_flip(self::$additionalLengthBytes)[strlen($value)/2];
+                    $header = self::sanitizeOutput(dechex($type | $lengthHeader));
+                    $result = $header.$value;
+                }
+                break;
+
+            case 'string':
+                $type = $stringType;
+                $value = self::sanitizeOutput(bin2hex($value));
+                $length = strlen($value) / 2;
+                $header = '';
+                $footer = '';
+                if ($length > 0xffffffffffff) {
+                    $header = dechex($type | self::ADDITIONAL_TYPE_INDEFINITE);
+                    $footer = dechex(self::INDEFINITE_BREAK);
+                } else if ($length > 0xffffffff) {
+                    $header = dechex($type | self::ADDITIONAL_LENGTH_8B) . self::sanitizeOutput(dechex($length));
+                } else if ($length > 0xffff) {
+                    $header = dechex($type | self::ADDITIONAL_LENGTH_4B) . self::sanitizeOutput(dechex($length));
+                } else if ($length > 0xff) {
+                    $header = dechex($type | self::ADDITIONAL_LENGTH_2B) . self::sanitizeOutput(dechex($length));
+                } else if ($length > 23) {
+                    $header = dechex($type | self::ADDITIONAL_LENGTH_1B) . self::sanitizeOutput(dechex($length));
+                } else {
+                    $header = dechex($type | $length);
+                }
+                $result = $header.$value.$footer;
+                break;
+
+            case 'double':
+            case 'array':
+            case 'object':
+
+            default:
+                throw new Exception('Unsupported type for encoding: '. gettype($value));
+
+
+        }
+        return self::sanitizeOutput($result);
+    }
 }
+
+var_dump(CBOR::encode(3.14));

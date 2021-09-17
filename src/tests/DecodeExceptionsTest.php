@@ -4,7 +4,7 @@ namespace PubNub\CborCodec\Tests;
 use PHPUnit\Framework\TestCase;
 use PubNub\CborCodec\CBOR;
 
-class ExceptionsTest extends TestCase
+class DecodeExceptionsTest extends TestCase
 {
     public function testInvalidInput()
     {
