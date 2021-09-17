@@ -280,19 +280,9 @@ class CBOR
                 $header = '';
                 $footer = '';
                 if ($length > 0xffffffffffff) {
-                    $header = dechex($type | self::ADDITIONAL_TYPE_INDEFINITE);
                     $footer = dechex(self::INDEFINITE_BREAK);
-                } else if ($length > 0xffffffff) {
-                    $header = dechex($type | self::ADDITIONAL_LENGTH_8B) . self::sanitizeOutput(dechex($length));
-                } else if ($length > 0xffff) {
-                    $header = dechex($type | self::ADDITIONAL_LENGTH_4B) . self::sanitizeOutput(dechex($length));
-                } else if ($length > 0xff) {
-                    $header = dechex($type | self::ADDITIONAL_LENGTH_2B) . self::sanitizeOutput(dechex($length));
-                } else if ($length > 23) {
-                    $header = dechex($type | self::ADDITIONAL_LENGTH_1B) . self::sanitizeOutput(dechex($length));
-                } else {
-                    $header = dechex($type | $length);
                 }
+                $header = self::buildHeader($type, $length);
                 $result = $header.$value.$footer;
                 break;
 
@@ -302,13 +292,46 @@ class CBOR
                 $result = $header.$value;
                 break;
             case 'array':
-            case 'object':
+                $length = count($value);
 
+                if (array_keys($value) !== range(0, count($value) -1)) {
+                    $type = self::TYPE_HASHMAP;
+                } else {
+                    $type = self::TYPE_ARRAY;
+                }
+                $result = self::buildHeader($type, $length);
+
+                foreach ($value as $key => $element) {
+                    if ($type === self::TYPE_HASHMAP) {
+                        $result .= self::encode($key, $stringType);
+                    }
+                    $result .= self::encode($element, $stringType);
+                }
+                break;
             default:
                 throw new Exception('Unsupported type for encoding: '. gettype($value));
 
 
         }
         return self::sanitizeOutput($result);
+    }
+
+    private static function buildHeader($type, $length)
+    {
+        if ($length > 0xffffffffffff) {
+            $header = dechex($type | self::ADDITIONAL_TYPE_INDEFINITE);
+            $footer = dechex(self::INDEFINITE_BREAK);
+        } else if ($length > 0xffffffff) {
+            $header = dechex($type | self::ADDITIONAL_LENGTH_8B) . self::sanitizeOutput(dechex($length));
+        } else if ($length > 0xffff) {
+            $header = dechex($type | self::ADDITIONAL_LENGTH_4B) . self::sanitizeOutput(dechex($length));
+        } else if ($length > 0xff) {
+            $header = dechex($type | self::ADDITIONAL_LENGTH_2B) . self::sanitizeOutput(dechex($length));
+        } else if ($length > 23) {
+            $header = dechex($type | self::ADDITIONAL_LENGTH_1B) . self::sanitizeOutput(dechex($length));
+        } else {
+            $header = dechex($type | $length);
+        }
+        return $header;
     }
 }
