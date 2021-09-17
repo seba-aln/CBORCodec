@@ -4,14 +4,14 @@ namespace PubNub\CborCodec\Tests;
 use PHPUnit\Framework\TestCase;
 use PubNub\CborCodec\CBOR;
 
-class HashMapsTest extends TestCase
+class DecodeArraysTest extends TestCase
 {
     use Traits\DataProviders;
 
     /**
-     * @dataProvider hashMaps
+     * @dataProvider arrays
      */
-    public function testDecodeHashMaps($input, $expected)
+    public function testDecodeArrays($input, $expected)
     {
         $decoded = CBOR::decode($input);
         $this->assertEquals($expected, $decoded);

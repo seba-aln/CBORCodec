@@ -4,7 +4,7 @@ namespace PubNub\CborCodec\Tests;
 use PHPUnit\Framework\TestCase;
 use PubNub\CborCodec\CBOR;
 
-class SimpleTypesTest extends TestCase
+class DecodeSimpleTypesTest extends TestCase
 {
     use Traits\DataProviders;
 
@@ -36,7 +36,9 @@ class SimpleTypesTest extends TestCase
     }
 
     /**
-     * @dataProvider floats
+     * @dataProvider halfPrecision
+     * @dataProvider singlePrecision
+     * @dataProvider doublePrecision
      */
     public function testFloats($input, $expected)
     {
