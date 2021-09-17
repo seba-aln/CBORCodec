@@ -39,21 +39,33 @@ trait DataProviders {
         ];
     }
 
-    public function floats()
+    public function halfPrecision()
     {
         return [
             ['F93C00', 1.0],
             ['F93555', 0.333251953125],
             ['F9EC00', -4096],
+        ];
+    }
+
+    public function singlePrecision()
+    {
+        return [
             ['FA47D9F95E', 111602.734375],
             ['FAC4027000', -521.75],
             ['FA457F9000', 4089],
             ['FA0002D7F5', 6.00804264307E-39],
             ['FA47D9F95E', 111602.734375],
+        ];
+    }
+
+    public function doublePrecision()
+    {
+        return [
             ['FB40091EB851EB851F', 3.14],
+            ['FB40091EB851EB8DE1', 3.1400000000009958],
             ['FB4000147AE147AE14', 2.01],
-            ['FB0000000000000000', 0],
-            ['FBc0240083126e978d', -10.001],
+            ['FBC0240083126E978D', -10.001],
         ];
     }
 

@@ -36,8 +36,9 @@ class DecodeSimpleTypesTest extends TestCase
     }
 
     /**
-     * @dataProvider floats
-     * @only
+     * @dataProvider halfPrecision
+     * @dataProvider singlePrecision
+     * @dataProvider doublePrecision
      */
     public function testFloats($input, $expected)
     {

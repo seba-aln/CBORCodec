@@ -35,14 +35,14 @@ class EncodeSimpleTypesTest extends TestCase
         $this->assertEquals($expected, $encoded);
     }
 
-    // /**
-    //  * @dataProvider floats
-    //  */
-    // public function testFloats($input, $expected)
-    // {
-    //     $encoded = CBOR::encode($input);
-    //     $this->assertEquals($expected, $encoded);
-    // }
+    /**
+     * @dataProvider doublePrecision
+     */
+    public function testFloats($expected, $input)
+    {
+        $encoded = CBOR::encode($input);
+        $this->assertEquals($expected, $encoded);
+    }
 
     /**
      * @dataProvider byteStrings

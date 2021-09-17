@@ -297,6 +297,10 @@ class CBOR
                 break;
 
             case 'double':
+                $header = dechex(self::TYPE_FLOAT | self::ADDITIONAL_LENGTH_8B);
+                $value = bin2hex(strrev(pack('d', $value)));
+                $result = $header.$value;
+                break;
             case 'array':
             case 'object':
 
@@ -308,5 +312,3 @@ class CBOR
         return self::sanitizeOutput($result);
     }
 }
-
-var_dump(CBOR::encode(3.14));
