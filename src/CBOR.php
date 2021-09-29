@@ -4,30 +4,30 @@ declare(strict_types=1);
 
 namespace PubNub\CborCodec;
 
-use Exception;
+use PubNub\CborCodec\Exceptions;
 
 class CBOR
 {
-    const TYPE_MASK         = 0b11100000;
-    const ADDITIONAL_MASK   = 0b00011111;
+    private const TYPE_MASK         = 0b11100000;
+    private const ADDITIONAL_MASK   = 0b00011111;
 
-    const TYPE_UNSIGNED_INT = 0b00000000;
-    const TYPE_NEGATIVE_INT = 0b00100000;
-    const TYPE_BYTE_STRING  = 0b01000000;
-    const TYPE_TEXT_STRING  = 0b01100000;
-    const TYPE_ARRAY        = 0b10000000;
-    const TYPE_HASHMAP      = 0b10100000;
-    const TYPE_TAG          = 0b11000000;
-    const TYPE_FLOAT        = 0b11100000;
+    public const TYPE_UNSIGNED_INT = 0b00000000;
+    public const TYPE_NEGATIVE_INT = 0b00100000;
+    public const TYPE_BYTE_STRING  = 0b01000000;
+    public const TYPE_TEXT_STRING  = 0b01100000;
+    public const TYPE_ARRAY        = 0b10000000;
+    public const TYPE_HASHMAP      = 0b10100000;
+    public const TYPE_TAG          = 0b11000000;
+    public const TYPE_FLOAT        = 0b11100000;
 
-    const ADDITIONAL_LENGTH_1B = 24;
-    const ADDITIONAL_LENGTH_2B = 25;
-    const ADDITIONAL_LENGTH_4B = 26;
-    const ADDITIONAL_LENGTH_8B = 27;
+    private const ADDITIONAL_LENGTH_1B = 24;
+    private const ADDITIONAL_LENGTH_2B = 25;
+    private const ADDITIONAL_LENGTH_4B = 26;
+    private const ADDITIONAL_LENGTH_8B = 27;
 
-    const ADDITIONAL_TYPE_INDEFINITE = 31;
+    private const ADDITIONAL_TYPE_INDEFINITE = 31;
 
-    const INDEFINITE_BREAK = 0b11111111;
+    private const INDEFINITE_BREAK = 0b11111111;
 
     private static $additionalLength = [
         self::ADDITIONAL_LENGTH_1B,
@@ -43,10 +43,10 @@ class CBOR
         self::ADDITIONAL_LENGTH_8B => 8,
     ];
 
-    const SIMPLE_VALUE_FALSE    = 'F4';
-    const SIMPLE_VALUE_TRUE     = 'F5';
-    const SIMPLE_VALUE_NULL     = 'F6';
-    const SIMPLE_VALUE_UNDEF    = 'F7';
+    private const SIMPLE_VALUE_FALSE    = 'F4';
+    private const SIMPLE_VALUE_TRUE     = 'F5';
+    private const SIMPLE_VALUE_NULL     = 'F6';
+    private const SIMPLE_VALUE_UNDEF    = 'F7';
 
     private static $simpleValues = [
         self::SIMPLE_VALUE_FALSE => false,
@@ -55,7 +55,14 @@ class CBOR
         self::SIMPLE_VALUE_UNDEF => null
     ];
 
-
+    /**
+     * Decode incoming hexadecimal string of data and outputing decoded values
+     *
+     * @param string $value
+     *
+     * @return mixed
+     * @throws \Exception
+     */
     public static function decode($value)
     {
         $value = self::sanitizeInput($value);
@@ -78,8 +85,7 @@ class CBOR
         $additional = $bits & self::ADDITIONAL_MASK;
 
 
-        switch ($type)
-        {
+        switch ($type) {
             case self::TYPE_NEGATIVE_INT:
             case self::TYPE_UNSIGNED_INT:
                 if (in_array($additional, self::$additionalLength)) {
@@ -96,7 +102,7 @@ class CBOR
             case self::TYPE_FLOAT:
                 if ($additional <= 23) {
                     return $additional;
-                } else if ($additional === self::ADDITIONAL_LENGTH_1B) {
+                } elseif ($additional === self::ADDITIONAL_LENGTH_1B) {
                     return self::getData($data);
                 } else {
                     return self::decodeFloat(
@@ -110,7 +116,7 @@ class CBOR
                 if (in_array($additional, self::$additionalLength)) {
                     $length = hexdec(self::getData($data, self::$additionalLengthBytes[$additional]));
                     $result =  hex2bin(self::getData($data, $length));
-                } else if ($additional == self::ADDITIONAL_TYPE_INDEFINITE) {
+                } elseif ($additional == self::ADDITIONAL_TYPE_INDEFINITE) {
                     $result =  hex2bin(self::getIndefiniteData($data));
                 } else {
                     $result = hex2bin(self::getData($data, $additional));
@@ -144,7 +150,6 @@ class CBOR
                     $result[$key] = $val;
                 }
                 return $result;
-
             default:
                 throw new \Exception(sprintf('Unsupported Type %b', $type));
         }
@@ -153,29 +158,28 @@ class CBOR
     private static function decodeFloat($value, $precision)
     {
         $bytes = hexdec($value);
-        switch ($precision)
-        {
+        switch ($precision) {
             case self::ADDITIONAL_LENGTH_2B:
                 $sign = ($bytes & 0b1000000000000000) >> 15;
                 $exp = ($bytes & 0b0111110000000000) >> 10;
                 $mant = $bytes & 0b1111111111;
                 if ($exp === 0) {
                     $result = (2 ** -14) * ($mant / 1024);
-                } else if ($exp === 0b11111) {
+                } elseif ($exp === 0b11111) {
                     $result = INF;
                 } else {
-                    $result = (2 ** ($exp - 15)) * (1 + $mant/1024);
+                    $result = (2 ** ($exp - 15)) * (1 + $mant / 1024);
                 }
-                return ($sign? -1 : 1) * $result;
+                return ($sign ? -1 : 1) * $result;
 
             case self::ADDITIONAL_LENGTH_4B:
-                $sign = ($bytes & 0x80000000) >> 31;
+                $sign = ($bytes >> 31) ? -1 : 1;
                 $x = ($bytes & ((1 << 23) - 1)) + (1 << 23) * ($bytes >> 31 | 1);
                 $exp = ($bytes >> 23 & 0xFF) - 127;
-                return $x * pow(2, $exp - 23) * ($sign? -1 : 1);
+                return $x * pow(2, $exp - 23) * $sign;
 
             case self::ADDITIONAL_LENGTH_8B:
-                $sign = ($bytes >> 63)? -1 : 1;
+                $sign = ($bytes >> 63) ? -1 : 1;
                 $exp = ($bytes >> 52) & 0x7ff;
 
                 $mant = $bytes & 0xfffffffffffff;
@@ -194,7 +198,7 @@ class CBOR
     private static function getData(&$data, $bytes = 1)
     {
         $result = null;
-        for($i = 1; $i <= $bytes; $i++) {
+        for ($i = 1; $i <= $bytes; $i++) {
             $result .= array_shift($data);
         }
         return (string)$result;
@@ -205,12 +209,21 @@ class CBOR
         $result = null;
         do {
             $byte = array_shift($data);
-            if (hexdec($byte) == self::INDEFINITE_BREAK) break;
+            if (hexdec($byte) == self::INDEFINITE_BREAK) {
+                break;
+            }
             $result .= $byte;
         } while (!empty($data));
         return (string)$result;
     }
 
+    /**
+     * Removes spaces, converts string to upper case and throws exception if input is not a valid heaxadecimal string
+     *
+     * @param string $value
+     *
+     * @return string
+     */
     private static function sanitizeInput($value)
     {
         $value = strtoupper(str_replace(' ', '', $value));
@@ -234,23 +247,36 @@ class CBOR
         $length = strlen($value);
 
         if ($useByteLength) {
-
-            if ($length === 1 || $length === 3) $value = '0'.$value;
-            else if ($length > 4 && $length < 8) $value = str_pad($value, 8, '0', STR_PAD_LEFT);
-            else if ($length > 8 && $length < 16)  $value = str_pad($value, 16, '0', STR_PAD_LEFT);
-        } else if ($length % 2) {
-            $value = '0'.$value;
+            if ($length === 1 || $length === 3) {
+                $value = '0' . $value;
+            } elseif ($length > 4 && $length < 8) {
+                $value = str_pad($value, 8, '0', STR_PAD_LEFT);
+            } elseif ($length > 8 && $length < 16) {
+                $value = str_pad($value, 16, '0', STR_PAD_LEFT);
+            }
+        } elseif ($length % 2) {
+            $value = '0' . $value;
         }
 
         return $value;
     }
 
+    /**
+     * Encodes value to a hexadecimal CBOR string. Because php does not differentiate byte strings and text strings
+     * the only way to manipulate output type of strings is to pass a string type (one of CBOR::TYPE_TEXT_STRING and
+     * CBOR::TYPE_BYTE_STRING).
+     *
+     * @param mixed $value
+     * @param string $stringType
+     *
+     * @return string
+     * @throws \Exception
+     */
 
     public static function encode($value, $stringType = self::TYPE_TEXT_STRING)
     {
         $result = '';
-        switch (gettype($value))
-        {
+        switch (gettype($value)) {
             case 'NULL':
                 return self::SIMPLE_VALUE_NULL;
             case 'boolean':
@@ -267,9 +293,9 @@ class CBOR
                     $result = self::sanitizeOutput(dechex($type | $value));
                 } else {
                     $value = self::sanitizeOutput(dechex($value), true);
-                    $lengthHeader = array_flip(self::$additionalLengthBytes)[strlen($value)/2];
+                    $lengthHeader = array_flip(self::$additionalLengthBytes)[strlen($value) / 2];
                     $header = self::sanitizeOutput(dechex($type | $lengthHeader));
-                    $result = $header.$value;
+                    $result = $header . $value;
                 }
                 break;
 
@@ -283,18 +309,18 @@ class CBOR
                     $footer = dechex(self::INDEFINITE_BREAK);
                 }
                 $header = self::buildHeader($type, $length);
-                $result = $header.$value.$footer;
+                $result = $header . $value . $footer;
                 break;
 
             case 'double':
                 $header = dechex(self::TYPE_FLOAT | self::ADDITIONAL_LENGTH_8B);
                 $value = bin2hex(strrev(pack('d', $value)));
-                $result = $header.$value;
+                $result = $header . $value;
                 break;
             case 'array':
                 $length = count($value);
 
-                if (array_keys($value) !== range(0, count($value) -1)) {
+                if (array_keys($value) !== range(0, count($value) - 1)) {
                     $type = self::TYPE_HASHMAP;
                 } else {
                     $type = self::TYPE_ARRAY;
@@ -309,9 +335,9 @@ class CBOR
                 }
                 break;
             default:
-                throw new Exception('Unsupported type for encoding: '. gettype($value));
-
-
+                throw new Exceptions\UnsupportedTypeException(
+                    'Unsupported type passed to encoding: ' . gettype($value)
+                );
         }
         return self::sanitizeOutput($result);
     }
@@ -321,13 +347,13 @@ class CBOR
         if ($length > 0xffffffffffff) {
             $header = dechex($type | self::ADDITIONAL_TYPE_INDEFINITE);
             $footer = dechex(self::INDEFINITE_BREAK);
-        } else if ($length > 0xffffffff) {
+        } elseif ($length > 0xffffffff) {
             $header = dechex($type | self::ADDITIONAL_LENGTH_8B) . self::sanitizeOutput(dechex($length));
-        } else if ($length > 0xffff) {
+        } elseif ($length > 0xffff) {
             $header = dechex($type | self::ADDITIONAL_LENGTH_4B) . self::sanitizeOutput(dechex($length));
-        } else if ($length > 0xff) {
+        } elseif ($length > 0xff) {
             $header = dechex($type | self::ADDITIONAL_LENGTH_2B) . self::sanitizeOutput(dechex($length));
-        } else if ($length > 23) {
+        } elseif ($length > 23) {
             $header = dechex($type | self::ADDITIONAL_LENGTH_1B) . self::sanitizeOutput(dechex($length));
         } else {
             $header = dechex($type | $length);

@@ -2,9 +2,10 @@
     "name": "pubnub/cbor-codec",
     "type": "library",
     "description": "A simple static coder/decoder for CBOR (Concise Binary Object Representation)",
-    "keywords": ["cbor"],
+    "keywords": ["cbor", "cbor encode", "cbor decode"],
     "homepage": "http://www.pubnub.com/",
     "license": "MIT",
+    "version": "0.1.0",
     "autoload": {
         "psr-4": {
             "PubNub\\CborCodec\\": "src/"
@@ -16,7 +17,8 @@
             "email": "sebastian.molenda@pubnub.com"
         }
     ],
-    "require": {
+
+    "require-dev": {
         "phpunit/phpunit": "^9.5"
     }
 }
