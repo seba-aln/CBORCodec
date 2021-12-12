@@ -1,7 +1,5 @@
 Simple and fast coder/decoder for CBOR
 
-This is the CBOR PHP encoder/decoder
-
 
 ### Examples:
 It's extremely simple to encode and decode basic PHP structures such as numbers, floats and arrays
